@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:eco_x/routes/app_routes.dart';
+
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
@@ -54,6 +55,15 @@ class DashboardPage extends StatelessWidget {
               color: Colors.red,
               onTap: () {
                 Navigator.pushReplacementNamed(context, "/login");
+              },
+            ),
+            _buildDashboardCard(
+              context,
+              icon: Icons.show_chart,
+              title: "Live Data",
+              color: Colors.green,
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.liveData);
               },
             ),
           ],
