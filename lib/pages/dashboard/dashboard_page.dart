@@ -1,16 +1,109 @@
 import 'package:flutter/material.dart';
 import 'package:eco_x/routes/app_routes.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _alertController;
+  bool _hasAlert =
+      true; // 🚨 mock true for testing (replace with real threshold logic)
+
+  @override
+  void initState() {
+    super.initState();
+    _alertController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _alertController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dashboard"),
-        backgroundColor: Colors.teal,
-        elevation: 6,
+      appBar: AppBar(title: const Text("EcoX"), centerTitle: true),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.green),
+              child: Text(
+                'EcoX Menu',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.show_chart),
+              title: const Text('Live Data'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.liveData);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart),
+              title: const Text('Analytics'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.analytics);
+              },
+            ),
+
+            /// 🚨 Animated Alerts entry
+            AnimatedBuilder(
+              animation: _alertController,
+              builder: (context, child) {
+                double scale = _hasAlert
+                    ? (1 + 0.1 * _alertController.value)
+                    : 1.0;
+                return Transform.scale(
+                  scale: scale,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.warning,
+                      color: _hasAlert ? Colors.red : Colors.orange,
+                    ),
+                    title: const Text('Alerts'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.alerts);
+                    },
+                  ),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.settings);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, AppRoutes.login);
+              },
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -19,51 +112,36 @@ class DashboardPage extends StatelessWidget {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           children: [
-            _buildDashboardCard(
-              context,
-              icon: Icons.account_circle,
-              title: "Profile",
-              color: Colors.blue,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Profile clicked")),
-                );
-              },
-            ),
-            _buildDashboardCard(
-              context,
-              icon: Icons.bar_chart,
-              title: "Analytics",
-              color: Colors.orange,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Analytics clicked")),
-                );
-              },
-            ),
-            _buildDashboardCard(
-              context,
-              icon: Icons.settings,
-              title: "Settings",
-              color: Colors.green,
-              onTap: () {},
-            ),
-            _buildDashboardCard(
-              context,
-              icon: Icons.logout,
-              title: "Logout",
-              color: Colors.red,
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/login");
-              },
-            ),
-            _buildDashboardCard(
-              context,
-              icon: Icons.show_chart,
+            _DashboardCard(
               title: "Live Data",
+              icon: Icons.show_chart,
               color: Colors.green,
               onTap: () {
                 Navigator.pushNamed(context, AppRoutes.liveData);
+              },
+            ),
+            _DashboardCard(
+              title: "Analytics",
+              icon: Icons.bar_chart,
+              color: Colors.blue,
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.analytics);
+              },
+            ),
+            _DashboardCard(
+              title: "Alerts",
+              icon: Icons.warning,
+              color: Colors.red,
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.alerts);
+              },
+            ),
+            _DashboardCard(
+              title: "Settings",
+              icon: Icons.settings,
+              color: Colors.orange,
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.settings);
               },
             ),
           ],
@@ -71,16 +149,26 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildDashboardCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
+class _DashboardCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _DashboardCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
@@ -91,7 +179,7 @@ class DashboardPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 48),
+            Icon(icon, size: 50, color: color),
             const SizedBox(height: 10),
             Text(
               title,
