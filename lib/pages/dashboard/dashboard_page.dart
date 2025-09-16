@@ -11,8 +11,7 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _alertController;
-  bool _hasAlert =
-      true; // 🚨 mock true for testing (replace with real threshold logic)
+  bool _hasAlert = false; // will toggle true if threshold exceeded from API
 
   @override
   void initState() {
@@ -20,7 +19,7 @@ class _DashboardPageState extends State<DashboardPage>
     _alertController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
+    );
   }
 
   @override
@@ -29,10 +28,31 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
+  void _navigate(BuildContext context, String route) {
+    Navigator.pop(context); // close drawer
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => Navigator.of(context).widget,
+        settings: RouteSettings(name: route),
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Simulate alert for now (later link with API)
+    if (_hasAlert) {
+      _alertController.repeat(reverse: true);
+    } else {
+      _alertController.stop();
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text("EcoX"), centerTitle: true),
+      appBar: AppBar(title: const Text("EcoX Dashboard"), centerTitle: true),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -47,51 +67,22 @@ class _DashboardPageState extends State<DashboardPage>
             ListTile(
               leading: const Icon(Icons.show_chart),
               title: const Text('Live Data'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.liveData);
-              },
+              onTap: () => _navigate(context, AppRoutes.liveData),
             ),
             ListTile(
               leading: const Icon(Icons.bar_chart),
               title: const Text('Analytics'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.analytics);
-              },
+              onTap: () => _navigate(context, AppRoutes.analytics),
             ),
-
-            /// 🚨 Animated Alerts entry
-            AnimatedBuilder(
-              animation: _alertController,
-              builder: (context, child) {
-                double scale = _hasAlert
-                    ? (1 + 0.1 * _alertController.value)
-                    : 1.0;
-                return Transform.scale(
-                  scale: scale,
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.warning,
-                      color: _hasAlert ? Colors.red : Colors.orange,
-                    ),
-                    title: const Text('Alerts'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.alerts);
-                    },
-                  ),
-                );
-              },
+            ListTile(
+              leading: const Icon(Icons.warning),
+              title: const Text('Alerts'),
+              onTap: () => _navigate(context, AppRoutes.alerts),
             ),
-
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.settings);
-              },
+              onTap: () => _navigate(context, AppRoutes.settings),
             ),
             const Divider(),
             ListTile(
@@ -116,33 +107,27 @@ class _DashboardPageState extends State<DashboardPage>
               title: "Live Data",
               icon: Icons.show_chart,
               color: Colors.green,
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.liveData);
-              },
+              onTap: () => Navigator.pushNamed(context, AppRoutes.liveData),
             ),
             _DashboardCard(
               title: "Analytics",
               icon: Icons.bar_chart,
               color: Colors.blue,
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.analytics);
-              },
+              onTap: () => Navigator.pushNamed(context, AppRoutes.analytics),
             ),
             _DashboardCard(
               title: "Alerts",
               icon: Icons.warning,
               color: Colors.red,
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.alerts);
-              },
+              onTap: () => Navigator.pushNamed(context, AppRoutes.alerts),
+              hasAlert: _hasAlert,
+              controller: _alertController,
             ),
             _DashboardCard(
               title: "Settings",
               icon: Icons.settings,
               color: Colors.orange,
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.settings);
-              },
+              onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
             ),
           ],
         ),
@@ -156,12 +141,16 @@ class _DashboardCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final bool hasAlert;
+  final AnimationController? controller;
 
   const _DashboardCard({
     required this.title,
     required this.icon,
     required this.color,
     required this.onTap,
+    this.hasAlert = false,
+    this.controller,
   });
 
   @override
@@ -179,7 +168,18 @@ class _DashboardCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 50, color: color),
+            hasAlert && controller != null
+                ? AnimatedBuilder(
+                    animation: controller!,
+                    builder: (context, child) {
+                      double scale = 1 + 0.1 * controller!.value;
+                      return Transform.scale(
+                        scale: scale,
+                        child: Icon(icon, size: 50, color: color),
+                      );
+                    },
+                  )
+                : Icon(icon, size: 50, color: color),
             const SizedBox(height: 10),
             Text(
               title,
